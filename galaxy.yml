@@ -1,18 +1,24 @@
 namespace: sbarbett
 name: pihole
-version: "1.1.2-custom"
+version: "2.0.0"
 readme: README.md
 authors:
-  - Shane Barbetta
-  - Oriol Rius (Custom modifications)
+  - Shane Barbetta (Original)
+  - Oriol Rius (Enhanced Fork)
 description: >
-  A collection of modules for managing your Pi-hole installation.
-  This is a custom version that uses enhanced pihole6api features.
+  Enhanced Ansible collection for comprehensive Pi-hole v6 management.
+  Features advanced domain management, DNS control, system monitoring,
+  configuration backup/restore, and complete automation capabilities.
+  Built on enhanced pihole6api fork with full API feature support.
 license:
   - "MIT"
 tags:
   - pihole
   - dns
   - networking
+  - automation
+  - monitoring
+  - backup
+  - security
 dependencies: {}
 repository: https://github.com/oriolrius/pihole-ansible
