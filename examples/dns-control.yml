@@ -1,0 +1,55 @@
+---
+# Example: DNS control with temporary blocking changes
+- name: DNS blocking control
+  hosts: localhost
+  gather_facts: false
+  vars:
+    pihole_url: "http://pi.hole"
+    pihole_password: "your_password_here"
+  
+  tasks:
+    - name: Check current blocking status
+      dns_control:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        action: "status"
+      register: current_status
+      
+    - name: Display current status
+      debug:
+        msg: |
+          Current blocking status: {{ current_status.blocking }}
+          {% if current_status.timer is defined %}
+          Time remaining: {{ current_status.timer }} seconds
+          {% endif %}
+          
+    - name: Temporarily disable blocking for maintenance (10 minutes)
+      dns_control:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        action: "disable"
+        timer: 600
+      when: current_status.blocking
+      
+    - name: Perform maintenance tasks
+      debug:
+        msg: "Performing system maintenance while blocking is disabled..."
+      when: current_status.blocking
+      
+    - name: Re-enable blocking immediately
+      dns_control:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        action: "enable"
+      when: current_status.blocking
+      
+    - name: Verify blocking is re-enabled
+      dns_control:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        action: "status"
+      register: final_status
+      
+    - name: Confirm blocking status
+      debug:
+        msg: "Blocking is now {{ 'enabled' if final_status.blocking else 'disabled' }}"

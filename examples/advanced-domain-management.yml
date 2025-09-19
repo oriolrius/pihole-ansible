@@ -1,0 +1,57 @@
+---
+# Example: Advanced domain management with regex patterns and groups
+- name: Advanced domain management
+  hosts: localhost
+  gather_facts: false
+  vars:
+    pihole_url: "http://pi.hole"
+    pihole_password: "your_password_here"
+  
+  tasks:
+    - name: Manage comprehensive domain blocking rules
+      domain_management:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        domains:
+          # Block exact advertising domains
+          - domain: "ads.google.com"
+            domain_type: "deny"
+            kind: "exact"
+            state: "present"
+            comment: "Block Google ads"
+            groups: ["Default"]
+            
+          # Block tracking domains with regex
+          - domain: ".*\\.doubleclick\\..*"
+            domain_type: "deny"
+            kind: "regex" 
+            state: "present"
+            comment: "Block all DoubleClick tracking domains"
+            
+          # Block social media for kids group
+          - domain: ".*\\.facebook\\.com"
+            domain_type: "deny"
+            kind: "regex"
+            state: "present"
+            comment: "Block Facebook for children"
+            groups: ["Kids Devices"]
+            
+          - domain: ".*\\.instagram\\.com"
+            domain_type: "deny"
+            kind: "regex"
+            state: "present"
+            comment: "Block Instagram for children"
+            groups: ["Kids Devices"]
+            
+          # Always allow educational sites
+          - domain: "*.edu"
+            domain_type: "allow"
+            kind: "regex"
+            state: "present"
+            comment: "Always allow educational domains"
+            
+          - domain: "khanacademy.org"
+            domain_type: "allow"
+            kind: "exact"
+            state: "present"
+            comment: "Educational resource"

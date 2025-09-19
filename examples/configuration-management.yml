@@ -1,0 +1,89 @@
+---
+# Example: Configuration management and backup
+- name: Pi-hole configuration management
+  hosts: localhost
+  gather_facts: false
+  vars:
+    pihole_url: "http://pi.hole"
+    pihole_password: "your_password_here"
+    backup_dir: "/tmp/pihole-backups"
+  
+  tasks:
+    - name: Create backup directory
+      file:
+        path: "{{ backup_dir }}"
+        state: directory
+        mode: '0755'
+        
+    - name: Get current configuration
+      config_management:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        action: "get"
+        detailed: true
+      register: current_config
+      
+    - name: Display current DNS settings
+      debug:
+        msg: |
+          Current DNS Configuration:
+          FQDN Required: {{ current_config.config.dns_fqdn_required | default('unknown') }}
+          Bogus Private: {{ current_config.config.dns_bogus_priv | default('unknown') }}
+          
+    - name: Export full configuration backup
+      config_management:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        action: "export"
+        export_path: "{{ backup_dir }}/pihole-backup-{{ ansible_date_time.epoch }}.tar.gz"
+      register: backup_result
+      
+    - name: Update DNS configuration
+      config_management:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        action: "update"
+        config_changes:
+          dns_fqdn_required: true
+          dns_bogus_priv: true
+          query_logging: true
+      register: update_result
+      
+    - name: Add custom DNS server
+      config_management:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        action: "add_item"
+        element: "dns_servers"
+        value: "1.1.1.1"
+      register: dns_add_result
+      
+    - name: Get updated configuration
+      config_management:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        action: "get"
+        config_section: "dns"
+      register: updated_config
+      
+    - name: Display configuration changes
+      debug:
+        msg: |
+          Configuration Management Results:
+          - Backup created: {{ backup_result.export_path if backup_result.success else 'Failed' }}
+          - DNS settings updated: {{ 'Success' if update_result.success else 'Failed' }}
+          - DNS server added: {{ 'Success' if dns_add_result.success else 'Failed' }}
+          
+    - name: Show backup file info
+      stat:
+        path: "{{ backup_result.export_path }}"
+      register: backup_file
+      when: backup_result.success
+      
+    - name: Display backup details
+      debug:
+        msg: |
+          Backup file: {{ backup_result.export_path }}
+          Size: {{ (backup_file.stat.size / 1024) | round(2) }} KB
+          Created: {{ backup_file.stat.ctime | to_datetime }}
+      when: backup_result.success and backup_file.stat.exists

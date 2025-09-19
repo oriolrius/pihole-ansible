@@ -1,0 +1,72 @@
+---
+# Example: System actions and maintenance
+- name: Pi-hole system maintenance
+  hosts: localhost
+  gather_facts: false
+  vars:
+    pihole_url: "http://pi.hole"
+    pihole_password: "your_password_here"
+  
+  tasks:
+    - name: Get FTL status before maintenance
+      ftl_info:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+      register: ftl_before
+      
+    - name: Display FTL status
+      debug:
+        var: ftl_before.data
+        
+    - name: Update all blocklists (run gravity)
+      actions:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        action: "run_gravity"
+      register: gravity_result
+      
+    - name: Display gravity update result
+      debug:
+        msg: "Gravity update {{ 'successful' if gravity_result.success else 'failed' }}"
+        
+    - name: Flush old query logs
+      actions:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        action: "flush_logs"
+      register: flush_result
+      
+    - name: Flush ARP cache
+      actions:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        action: "flush_arp"
+      register: arp_result
+      
+    - name: Restart DNS service for fresh start
+      actions:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        action: "restart_dns"
+      register: restart_result
+      
+    - name: Wait for DNS service to restart
+      wait_for:
+        timeout: 10
+      when: restart_result.success
+      
+    - name: Verify FTL status after maintenance
+      ftl_info:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+      register: ftl_after
+      
+    - name: Compare FTL status
+      debug:
+        msg: |
+          Maintenance Summary:
+          - Gravity update: {{ 'Success' if gravity_result.success else 'Failed' }}
+          - Log flush: {{ 'Success' if flush_result.success else 'Failed' }}
+          - ARP flush: {{ 'Success' if arp_result.success else 'Failed' }}
+          - DNS restart: {{ 'Success' if restart_result.success else 'Failed' }}
+          - FTL Status: {{ ftl_after.data.status if ftl_after.success else 'Unknown' }}

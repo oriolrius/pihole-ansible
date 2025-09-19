@@ -1,0 +1,129 @@
+---
+# Example: Comprehensive metrics and monitoring
+- name: Pi-hole metrics and monitoring
+  hosts: localhost
+  gather_facts: false
+  vars:
+    pihole_url: "http://pi.hole"
+    pihole_password: "your_password_here"
+  
+  tasks:
+    - name: Get overall Pi-hole statistics
+      metrics:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        metric_type: "summary"
+      register: summary_stats
+      
+    - name: Get query type distribution
+      metrics:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        metric_type: "query_types"
+      register: query_types
+      
+    - name: Get top 10 blocked domains
+      metrics:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        metric_type: "top_domains"
+        blocked: true
+        count: 10
+      register: top_blocked
+      
+    - name: Get top 10 allowed domains
+      metrics:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        metric_type: "top_domains"
+        blocked: false
+        count: 10
+      register: top_allowed
+      
+    - name: Get top clients
+      metrics:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        metric_type: "top_clients"
+        count: 10
+      register: top_clients
+      
+    - name: Get upstream DNS statistics
+      metrics:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        metric_type: "upstreams"
+      register: upstreams
+      
+    - name: Get recent blocked domains
+      metrics:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        metric_type: "recent_blocked"
+        count: 20
+      register: recent_blocked
+      
+    - name: Get activity history
+      metrics:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        metric_type: "history"
+      register: history
+      
+    - name: Get filtered query log (last hour)
+      metrics:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        metric_type: "queries"
+        length: 50
+        from_ts: "{{ (ansible_date_time.epoch | int) - 3600 }}"
+      register: recent_queries
+      
+    - name: Display comprehensive statistics
+      debug:
+        msg: |
+          📊 Pi-hole Statistics Summary:
+          
+          🔢 Overall Stats:
+          - Total Queries: {{ summary_stats.data.total_queries | default(0) }}
+          - Blocked Queries: {{ summary_stats.data.blocked_queries | default(0) }}
+          - Block Percentage: {{ ((summary_stats.data.blocked_queries | default(0) / summary_stats.data.total_queries | default(1)) * 100) | round(2) }}%
+          - Clients: {{ summary_stats.data.unique_clients | default(0) }}
+          
+          🚫 Top Blocked Domains:
+          {% for domain in top_blocked.data.top_domains[:5] %}
+          - {{ domain.domain }}: {{ domain.count }} queries
+          {% endfor %}
+          
+          ✅ Top Allowed Domains:
+          {% for domain in top_allowed.data.top_domains[:5] %}
+          - {{ domain.domain }}: {{ domain.count }} queries
+          {% endfor %}
+          
+          📱 Top Clients:
+          {% for client in top_clients.data.top_clients[:5] %}
+          - {{ client.name | default(client.ip) }}: {{ client.count }} queries
+          {% endfor %}
+          
+          🌐 Recent Activity:
+          - Recent queries analyzed: {{ recent_queries.data.queries | length }}
+          - Recently blocked: {{ recent_blocked.data.recent_blocked | length }} domains
+          
+    - name: Check if blocking percentage is healthy
+      debug:
+        msg: "⚠️  Blocking percentage seems low. Consider updating blocklists."
+      when: summary_stats.success and (summary_stats.data.blocked_queries / summary_stats.data.total_queries * 100) < 10
+      
+    - name: Get network information
+      network_info:
+        url: "{{ pihole_url }}"
+        password: "{{ pihole_password }}"
+        info_type: "network_info"
+      register: network_info
+      
+    - name: Display network information
+      debug:
+        msg: |
+          🌐 Network Information:
+          {{ network_info.data | to_nice_json }}
+      when: network_info.success
