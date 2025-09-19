@@ -1,11 +1,13 @@
 namespace: sbarbett
 name: pihole
-version: "1.1.1"
+version: "1.1.2-custom"
 readme: README.md
 authors:
   - Shane Barbetta
+  - Oriol Rius (Custom modifications)
 description: >
   A collection of modules for managing your Pi-hole installation.
+  This is a custom version that uses enhanced pihole6api features.
 license:
   - "MIT"
 tags:
@@ -13,4 +15,4 @@ tags:
   - dns
   - networking
 dependencies: {}
-repository: https://github.com/sbarbett/pihole-ansible
+repository: https://github.com/oriolrius/pihole-ansible

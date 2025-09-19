@@ -1,0 +1,2 @@
+# Use custom fork of pihole6api with enhanced features
+git+https://github.com/oriolrius/pihole6api.git@feature/local-dns-improvements
