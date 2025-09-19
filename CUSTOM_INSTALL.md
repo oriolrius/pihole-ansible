@@ -5,13 +5,13 @@ This collection uses a custom fork of pihole6api with enhanced features.
 To install the required dependencies:
 
 ```bash
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 Or install directly:
 
 ```bash
-pip install git+https://github.com/oriolrius/pihole6api.git@feature/local-dns-improvements
+uv pip install git+https://github.com/oriolrius/pihole6api.git@feature/local-dns-improvements
 ```
 
 ## Original Installation Instructions
